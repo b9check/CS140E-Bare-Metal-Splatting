@@ -2,34 +2,26 @@
 #include <math.h>
 #include "main-helpers.h"
 
-// Run steps 2-6 on each Gaussian. Writes visible Splats into static buffer out_splats.
+// Run steps 3-6 per Gaussian. cov3d precomputed once by caller.
 // Returns number of valid splats (skips behind-camera and degenerate ones).
-// Caller provides buffer sized to n (worst case: all Gaussians visible).
-int preprocess(const Gaussian *gaussians, int n,
+int preprocess(const Gaussian *gaussians, const Mat33 *cov3d, int n,
                const float cam_pos[3], const float cam_angles[3],
                float fovx, float fovy, int W, int H,
                Splat *out_splats) {
-    // Build per-frame matrices from camera params
     Mat44 view = build_view_matrix(cam_angles, cam_pos);
     Mat44 proj = build_proj_matrix(&view, fovx, fovy, ZNEAR, ZFAR);
-    
-    // Per Gaussian per frame preprocessing
+
     int count = 0;
     for (int i = 0; i < n; i++) {
         const Gaussian *g = &gaussians[i];
 
-        // Cull if behind camera
         Vec3 p_cam = transform_to_camera(g->pos, &view);
         float depth = p_cam.v[2];
         if (depth < MIN_DEPTH)
             continue;
 
-        // Project center to pixel coords
         Vec2 screen = project_to_screen(g->pos, &proj, W, H);
-
-        // Build 3D covariance from scale + rotation, then project to 2D
-        Mat33 cov3d = compute_cov_3d((float *)g->scale, (float *)g->rot);
-        Mat22 cov2d = compute_cov2d(g->pos, &cov3d, &view, fovx, fovy, W, H);
+        Mat22 cov2d = compute_cov2d(g->pos, &cov3d[i], &view, fovx, fovy, W, H);
 
         // Invert covariance to get conic + screen radius; skip degenerate
         ConicRadius cr = prepare_conic_and_radius(&cov2d);

@@ -1,38 +1,51 @@
 # Gaussian Splatting Rendering Pipeline
 
 Based on "3D Gaussian Splatting for Real-Time Radiance Field Rendering" (Kerbl et al., SIGGRAPH 2023).
-The three core equations from the paper are marked below.
 See [README.md](README.md) for the `.gsplat` input format.
 
 ---
 
-**1. Load** — Read `.gsplat` binary: count N, then N x 56 bytes of packed Gaussian data.
+## When Each Step Runs (C)
 
-**2. Build 3D covariance** (per Gaussian) — *Paper Eq. 6*
+| Step | When |
+|------|------|
+| Scene, config | Compile (xxd → scene-data.h, config.h) |
+| 1. Load | Once (parse count + cast from embedded data) |
+| 2. Cov3d | Once (before frame loop; depends only on Gaussian) |
+| 3–6. Preprocess | Per frame (transform, project, cov2d, conic) |
+| 7. Sort | Per frame |
+| 8. Rasterize | Per frame |
+| 9. Output | Per frame |
+
+---
+
+**1. Load** — Read `.gsplat` binary: count N, then N x 56 bytes of packed Gaussian data. (Bare-metal: embedded at compile; parse at runtime.)
+
+**2. Build 3D covariance** (per Gaussian) — *Paper Eq. 6* — *Runs once before frame loop.*
 Each Gaussian is an oriented ellipsoid. We store scale (3 radii) and rotation (quaternion) separately, and combine them into a 3x3 covariance matrix:
 `Sigma = R*S*S^T*R^T`.
 This decomposition guarantees the matrix is always valid (positive semi-definite).
 
-**3. Transform to camera space** (per Gaussian) — *Standard 3D graphics*
+**3. Transform to camera space** (per Gaussian, per frame) — *Standard 3D graphics*
 Multiply position by the view matrix to get the Gaussian's position relative to the camera.
 If it's behind the camera (depth < 0.2), skip it.
 
-**4. Project to screen** (per Gaussian) — *Standard 3D graphics*
+**4. Project to screen** (per Gaussian, per frame) — *Standard 3D graphics*
 Apply perspective projection to get a 2D pixel coordinate. Things farther away appear smaller.
 
-**5. Project covariance to 2D** (per Gaussian) — *Paper Eq. 5, from Zwicker et al. 2001*
+**5. Project covariance to 2D** (per Gaussian, per frame) — *Paper Eq. 5, from Zwicker et al. 2001*
 The 3D ellipsoid, seen through the camera, becomes a 2D ellipse on screen.
 `Sigma_2D = J * W * Sigma_3D * W^T * J^T`
 where J is the Jacobian of perspective projection (captures how depth scaling distorts the shape) and W is the view rotation. Ignore third row and column.
 
-**6. Prepare for rasterization** (per Gaussian) — *Linear algebra*
+**6. Prepare for rasterization** (per Gaussian, per frame) — *Linear algebra*
 Invert the 2x2 covariance to get the "conic" form (used for fast per-pixel evaluation).
 Compute the screen radius from eigenvalues (3-sigma rule: covers 99.7% of the Gaussian).
 
-**7. Sort by depth** — *Painter's algorithm*
+**7. Sort by depth** (per frame) — *Painter's algorithm*
 Sort all visible Gaussians front-to-back by depth so alpha compositing layers them correctly.
 
-**8. Rasterize** (per pixel) — *Paper Eq. 4 + volume rendering (Eq. 3)*
+**8. Rasterize** (per frame, per pixel) — *Paper Eq. 4 + volume rendering (Eq. 3)*
 For each pixel, walk through sorted Gaussians and blend their contributions.
 Start with T = 1.0 (fully transparent) and r, g, b = 0.
 For each Gaussian:
@@ -48,4 +61,4 @@ For each Gaussian:
 - After all Gaussians: `r += T * bg_r`, `g += T * bg_g`, `b += T * bg_b`.
   T is whatever light wasn't absorbed — the background gets that remainder.
 
-**9. Output** — Write image as PPM, convert to PNG for viewing.
+**9. Output** (per frame) — Write image as PPM, convert to PNG for viewing.

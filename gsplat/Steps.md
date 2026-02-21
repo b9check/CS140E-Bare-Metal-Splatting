@@ -46,7 +46,7 @@ Compute the screen radius from eigenvalues (3-sigma rule: covers 99.7% of the Ga
 Sort all visible Gaussians front-to-back by depth so alpha compositing layers them correctly.
 
 **8. Rasterize** (per frame, per pixel) — *Paper Eq. 4 + volume rendering (Eq. 3)*
-For each pixel, walk through sorted Gaussians and blend their contributions.
+For each pixel, walk through sorted Gaussians and blend their contributions. A simple implementation iterates over all splats per pixel and skips those outside the radius (`dx² + dy² > radius²`). For speed, the paper uses **tiling**: divide the screen into tiles (e.g. 16×16), assign each splat to the tiles it overlaps, then per pixel only iterate splats in that tile's list.
 Start with T = 1.0 (fully transparent) and r, g, b = 0.
 For each Gaussian:
 - Compute d = (pixel - gaussian_center) in screen space

@@ -34,14 +34,33 @@ To get a `.gsplat` file, either:
 See [Steps.md](Steps.md) for a detailed walkthrough of the rendering pipeline with equations.
 
 1. **Load** — On bare metal: `.gsplat` is embedded as a C array at build time (`scene-data.h`). Main casts directly to `Gaussian*`; no file I/O.
-2. **Preprocess** (per Gaussian, per frame) — For each Gaussian:
+2. **Build 3D covariance** (once, per Gaussian) — From scale + rotation, before the frame loop.
+3. **Preprocess** (per frame) — For each Gaussian:
    - Transform to camera space, cull if behind camera
    - Project center to screen pixel coordinates
-   - Build 3D covariance from scale + rotation, project to 2D
-   - Invert 2D covariance to get conic + screen radius; discard degenerate splats
-3. **Sort** — Order visible splats front-to-back by depth.
-4. **Rasterize** — Per-pixel alpha compositing through sorted splats.
-5. **Output** — Write image as PPM, then convert to PNG for viewing.
+   - Project cov to 2D, invert to conic + screen radius; discard degenerate splats
+4. **Sort** — Order visible splats front-to-back by depth.
+5. **Rasterize** — Per-pixel alpha compositing through sorted splats.
+6. **Output** — Write image as PPM, then convert to PNG for viewing.
+
+## Data Types
+
+### Gaussian (input)
+Raw scene data. 56 bytes, matches `.gsplat` layout exactly.
+- `pos[3]` — world position (x, y, z)
+- `scale[3]` — ellipsoid radii (sx, sy, sz)
+- `opacity` — alpha
+- `rot[4]` — quaternion (qx, qy, qz, qw)
+- `color[3]` — pre-baked RGB [0,1]
+
+### Splat (output of preprocessing, per-frame)
+Ready for rasterization.
+- `px, py` — screen pixel coordinates
+- `depth` — camera-space z (for sorting)
+- `conic[3]` — inverse 2D covariance packed as (a, b, c)
+- `opacity` — from Gaussian
+- `color[3]` — from Gaussian
+- `radius` — bounding radius in pixels (3-sigma); 0 = invalid/culled
 
 ## C Implementation (`c/`)
 

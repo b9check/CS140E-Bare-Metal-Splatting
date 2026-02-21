@@ -52,8 +52,8 @@ Static buffers, no malloc in the hot path.
 | `matrix-helpers.h/.c` | Generic matrix/vector types and operations |
 | `preprocess-helpers.h/.c` | Splatting-specific types (Gaussian, Splat) and pipeline steps 2-6 |
 | `main-helpers.h` | Umbrella header pulling everything together |
-| `Preprocess.c` | Orchestration: loads `.gsplat`, runs preprocessing loop |
-| `main.c` | Entry point: load once, preprocess per frame, sort + rasterize (TODO) |
+| `Preprocess.c` | Load `.gsplat` and preprocess functions (called by main) |
+| `main.c` | Entry point: loads scene once, then per-frame preprocess + sort + rasterize |
 
 ## Python Reference (`python/`)
 

@@ -8,9 +8,9 @@ Based on "3D Gaussian Splatting for Real-Time Radiance Field Rendering" (Kerbl e
 ```
 gsplat/
   *.gsplat, *.ply       Input scene data (generated or converted)
+  Steps.md              Pipeline walkthrough (equations + intuition)
   c/                     C implementation (bare-metal target)
   python/                Python reference implementation
-  Steps.md              Pipeline walkthrough (equations + intuition)
 ```
 
 ## Input Format (`.gsplat`)
@@ -30,6 +30,8 @@ To get a `.gsplat` file, either:
 - **Convert from PLY** (the format available from trained 3DGS models online) with `ply_to_gsplat.py`. This bakes the spherical harmonics down to a single RGB color and drops all other SH coefficients.
 
 ## Pipeline Overview
+
+See [Steps.md](Steps.md) for a detailed walkthrough of the rendering pipeline with equations.
 
 1. **Load** — Read `.gsplat` binary into a Gaussian array.
 2. **Preprocess** (per Gaussian, per frame) — For each Gaussian:

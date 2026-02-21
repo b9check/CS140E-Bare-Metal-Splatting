@@ -2,15 +2,14 @@
 
 Based on "3D Gaussian Splatting for Real-Time Radiance Field Rendering" (Kerbl et al., SIGGRAPH 2023).
 The three core equations from the paper are marked below.
-
-**Input format:** N (uint32) + N x 14 floats: pos(3), scale(3), opacity(1), rot(4), color(3)
+See [README.md](README.md) for the `.gsplat` input format.
 
 ---
 
-**1. Load** — Read count, then N x 56 bytes of packed Gaussian data.
+**1. Load** — Read `.gsplat` binary: count N, then N x 56 bytes of packed Gaussian data.
 
 **2. Build 3D covariance** (per Gaussian) — *Paper Eq. 6*
-Each Gaussian is an oriented ellipsoid. We store scale (3 radii) and rotation (quaternion) separately, and combine them into a 3x3 covariance matrix: 
+Each Gaussian is an oriented ellipsoid. We store scale (3 radii) and rotation (quaternion) separately, and combine them into a 3x3 covariance matrix:
 `Sigma = R*S*S^T*R^T`.
 This decomposition guarantees the matrix is always valid (positive semi-definite).
 
@@ -23,7 +22,7 @@ Apply perspective projection to get a 2D pixel coordinate. Things farther away a
 
 **5. Project covariance to 2D** (per Gaussian) — *Paper Eq. 5, from Zwicker et al. 2001*
 The 3D ellipsoid, seen through the camera, becomes a 2D ellipse on screen.
-`Sigma_2D = J * W * Sigma_3D * W^T * J^T` 
+`Sigma_2D = J * W * Sigma_3D * W^T * J^T`
 where J is the Jacobian of perspective projection (captures how depth scaling distorts the shape) and W is the view rotation. Ignore third row and column.
 
 **6. Prepare for rasterization** (per Gaussian) — *Linear algebra*
@@ -49,4 +48,4 @@ For each Gaussian:
 - After all Gaussians: `r += T * bg_r`, `g += T * bg_g`, `b += T * bg_b`.
   T is whatever light wasn't absorbed — the background gets that remainder.
 
-**9. Output** — Write image as PPM (trivial format: header + raw RGB bytes).
+**9. Output** — Write image as PPM, convert to PNG for viewing.

@@ -4,7 +4,7 @@ Brian's code is in [`gsplat/`](gsplat/) - a minimal 3D Gaussian splatting render
 
 I have a python implementation and a C one designed to run without dynamic memory allocation on our Pi's. The C code does steps 1-6 (see [Steps.md](gsplat/Steps.md)); scene data is embedded at build time via `xxd` (no filesystem).
 
-See the subdirectory's README for more info.
+See the [gsplat README](gsplat/README.md) for more info.
 
 ## Setup
 

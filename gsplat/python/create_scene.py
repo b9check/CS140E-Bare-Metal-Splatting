@@ -89,4 +89,4 @@ def make_scene():
 
 if __name__ == "__main__":
     scene = make_scene()
-    write_gsplat("../complex.gsplat", scene)
+    write_gsplat("../scene.gsplat", scene)

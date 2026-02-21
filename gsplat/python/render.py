@@ -296,7 +296,7 @@ def setup_camera(width=256, height=256, fovx=45.0, fovy=45.0, znear=0.01, zfar=1
 # ---------------------------------------------------------------------------
 
 def main():
-    input_path = sys.argv[1] if len(sys.argv) > 1 else "../dummy.gsplat"
+    input_path = sys.argv[1] if len(sys.argv) > 1 else "../scene.gsplat"
     output_base = input_path.rsplit(".", 1)[0]
 
     # Step 1: Load

@@ -5,7 +5,6 @@
 #include "preprocess-helpers.h"
 #include "config.h"
 
-int load_gaussians(const char *path, Gaussian *out, int max);
 int preprocess(const Gaussian *gaussians, int n,
                const float cam_pos[3], const float cam_angles[3],
                float fovx, float fovy, int W, int H,

@@ -40,7 +40,7 @@ def load_gsplat(path: str) -> List[Gaussian]:
 
 
 if __name__ == "__main__":
-    gs = load_gsplat("../dummy.gsplat")
+    gs = load_gsplat("../scene.gsplat")
     print(f"Loaded {len(gs)} Gaussians from .gsplat")
     for i, g in enumerate(gs):
         print(f"  [{i}] pos={g.pos} scale={g.scale} opacity={g.opacity:.2f} "

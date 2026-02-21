@@ -1,24 +1,6 @@
-#include <stdio.h>
+#include "rpi.h"
 #include <math.h>
 #include "main-helpers.h"
-
-// Load .gsplat into a static buffer. Returns count, or -1 if too many.
-// Struct layout matches binary format so fread works directly.
-int load_gaussians(const char *path, Gaussian *out, int max) {
-    FILE *f = fopen(path, "rb");
-    unsigned int n;
-    // Get number of Gaussians
-    fread(&n, sizeof(unsigned int), 1, f);
-    if (n > max) {
-        fclose(f);
-        return -1;
-    }
-    // Read Gaussians to static buffer (out)
-    fread(out, sizeof(Gaussian), n, f);
-    fclose(f);
-    return (int)n;
-}
-
 
 // Run steps 2-6 on each Gaussian. Writes visible Splats into static buffer out_splats.
 // Returns number of valid splats (skips behind-camera and degenerate ones).

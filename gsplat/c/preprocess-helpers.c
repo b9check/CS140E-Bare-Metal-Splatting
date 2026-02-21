@@ -18,9 +18,12 @@ Mat33 compute_cov_3d(float scale[3], float rot[4]) {
 }
 
 // Build view matrix (world-to-camera transform) from camera pose. Call once per frame.
+// Match Python: R includes z-flip so camera at +z looks toward -z (scene at negative z).
 Mat44 build_view_matrix(const float cam_angles[3], const float cam_pos[3]) {
     Mat33 R = euler_to_rotation(cam_angles);
-    return homo_from_r_t(&R, cam_pos);
+    Mat33 Z_flip = { .m = {{1,0,0}, {0,1,0}, {0,0,-1}} };
+    Mat33 R_view = mult_33_33(&R, &Z_flip);
+    return homo_from_r_t(&R_view, cam_pos);
 }
 
 // Transform Gaussian's world position into camera frame. 

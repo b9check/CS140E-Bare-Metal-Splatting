@@ -1,32 +1,33 @@
-#include <stdio.h>
+#include "rpi.h"
+#include "config.h"
 #include "main-helpers.h"
+#include "scene-data.h"
 
-// Static buffers — no malloc, sized for worst case
-static Gaussian gaussians[MAX_GAUSSIANS];
-static Splat splats[MAX_GAUSSIANS];
-
-int main(int argc, char **argv) {
-    const char *path = (argc > 1) ? argv[1] : "scene.gsplat";
-
-    // Load gaussians from .gsplat file (once)
-    int n = load_gaussians(path, gaussians, MAX_GAUSSIANS);
-    if (n < 0) {
-        printf("Too many gaussians or failed to load %s\n", path);
-        return 1;
+void notmain(void) {
+    // read first 4 bytes to get number of gaussians, check if too many
+    uint32_t n = *(const uint32_t *)gsplat_scene_gsplat;
+    if (n > MAX_GAUSSIANS) {
+        printk("Too many gaussians (%u > %d)\n", (unsigned)n, MAX_GAUSSIANS);
+        return;
     }
-    printf("Loaded %d gaussians from %s\n", n, path);
+    // read the rest of the file, cast them as Gaussian pointers
+    const Gaussian *gaussians = (const Gaussian *)&gsplat_scene_gsplat[4];
 
-    // Camera params
-    float cam_pos[3]    = { 0.0f, 0.0f, 5.0f };
-    float cam_angles[3] = { 0.0f, 0.0f, 0.0f };
+    // create a splat array of size n to store splats after preprocessing
+    Splat splats[n];
+    printk("Loaded %u gaussians\n", (unsigned)n);
 
-    // Preprocess (per frame — re-run if camera moves)
-    int num_splats = preprocess(gaussians, n, cam_pos, cam_angles,
+    // load camera params
+    float cam_pos[3]    = { CAM_POS_X, CAM_POS_Y, CAM_POS_Z };
+    float cam_angles[3] = { CAM_ANGLE_X, CAM_ANGLE_Y, CAM_ANGLE_Z };
+
+    // preprocess the gaussians: modifies the splats array in place
+    int num_splats = preprocess(gaussians, (int)n, cam_pos, cam_angles,
                                 FOVX, FOVY, WIDTH, HEIGHT, splats);
-    printf("Preprocessed: %d visible splats\n", num_splats);
+    printk("Preprocessed: %d visible splats\n", num_splats);
 
     // TODO: sort splats by depth
     // TODO: rasterize
 
-    return 0;
+    printk("done!\n");
 }

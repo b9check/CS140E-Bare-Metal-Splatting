@@ -33,7 +33,7 @@ To get a `.gsplat` file, either:
 
 See [Steps.md](Steps.md) for a detailed walkthrough of the rendering pipeline with equations.
 
-1. **Load** — Read `.gsplat` binary into a Gaussian array.
+1. **Load** — On bare metal: `.gsplat` is embedded as a C array at build time (`scene-data.h`). Main casts directly to `Gaussian*`; no file I/O.
 2. **Preprocess** (per Gaussian, per frame) — For each Gaussian:
    - Transform to camera space, cull if behind camera
    - Project center to screen pixel coordinates
@@ -54,8 +54,8 @@ Static buffers, no malloc in the hot path.
 | `matrix-helpers.h/.c` | Generic matrix/vector types and operations |
 | `preprocess-helpers.h/.c` | Splatting-specific types (Gaussian, Splat) and pipeline steps 2-6 |
 | `main-helpers.h` | Umbrella header pulling everything together |
-| `Preprocess.c` | Load `.gsplat` and preprocess functions (called by main) |
-| `main.c` | Entry point: loads scene once, then per-frame preprocess + sort + rasterize |
+| `Preprocess.c` | Preprocess (steps 2-6): camera transform, project, cov2d, conic |
+| `main.c` | Entry point: reads count + casts embedded `scene-data.h` to Gaussians, then preprocess + sort + rasterize |
 
 ## Python Reference (`python/`)
 
@@ -75,15 +75,15 @@ NumPy-based reference renderer. Useful for validation and generating test scenes
 ```bash
 cd python
 
-# Option A: generate a synthetic scene
+# Option A: generate a synthetic scene (writes ../scene.gsplat)
 python create_scene.py
 
 # Option B: convert an existing PLY from a trained 3DGS model
-python ply_to_gsplat.py ../model.ply ../model.gsplat
+python ply_to_gsplat.py ../model.ply ../scene.gsplat
 
-# Render
-python render.py ../complex.gsplat
+# Render (default input: ../scene.gsplat)
+python render.py
 
 # Convert output to PNG for viewing
-python ppm_to_png.py ../complex.ppm
+python ppm_to_png.py ../scene.ppm
 ```

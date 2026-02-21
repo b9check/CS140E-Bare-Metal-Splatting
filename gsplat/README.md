@@ -1,4 +1,4 @@
-# my-splat
+# gsplat
 
 Minimal 3D Gaussian splatting renderer, targeting bare-metal Raspberry Pi.
 Based on "3D Gaussian Splatting for Real-Time Radiance Field Rendering" (Kerbl et al., SIGGRAPH 2023).
@@ -6,16 +6,32 @@ Based on "3D Gaussian Splatting for Real-Time Radiance Field Rendering" (Kerbl e
 ## Directory Structure
 
 ```
-my-splat/
+gsplat/
   *.gsplat, *.ply       Input scene data (generated or converted)
   c/                     C implementation (bare-metal target)
   python/                Python reference implementation
   Steps.md              Pipeline walkthrough (equations + intuition)
 ```
 
+## Input Format (`.gsplat`)
+
+Our renderer uses a custom binary format (`.gsplat`) — a stripped-down version of the standard PLY that's trivial to parse on bare metal.
+
+```
+[4 bytes]      N (uint32, little-endian)
+[N x 56 bytes] per Gaussian: pos(3f) scale(3f) opacity(1f) rot(4f) color(3f)
+```
+
+All values are little-endian float32. Color is pre-baked from SH DC term (`0.282 * sh_dc + 0.5`).
+Quaternion ordering is (x, y, z, w). Total file size: `4 + N * 56` bytes.
+
+To get a `.gsplat` file, either:
+- **Create a synthetic scene** with `create_scene.py`, or
+- **Convert from PLY** (the format available from trained 3DGS models online) with `ply_to_gsplat.py`. This bakes the spherical harmonics down to a single RGB color and drops all other SH coefficients.
+
 ## Pipeline Overview
 
-1. **Load** — Read `.gsplat` binary: N Gaussians, each with position, scale, rotation, opacity, color.
+1. **Load** — Read `.gsplat` binary into a Gaussian array.
 2. **Preprocess** (per Gaussian, per frame) — For each Gaussian:
    - Transform to camera space, cull if behind camera
    - Project center to screen pixel coordinates
@@ -23,17 +39,7 @@ my-splat/
    - Invert 2D covariance to get conic + screen radius; discard degenerate splats
 3. **Sort** — Order visible splats front-to-back by depth.
 4. **Rasterize** — Per-pixel alpha compositing through sorted splats.
-5. **Output** — Write image (PPM or framebuffer).
-
-## .gsplat - Custom File Format I made
-
-```
-[4 bytes]      N (uint32, little-endian)
-[N x 56 bytes] per Gaussian: pos(3f) scale(3f) opacity(1f) rot(4f) color(3f)
-```
-
-All values are little-endian float32. Color is pre-baked from SH DC term.
-Quaternion ordering is (x, y, z, w). Total file size: `4 + N * 56` bytes.
+5. **Output** — Write image as PPM, then convert to PNG for viewing.
 
 ## C Implementation (`c/`)
 
@@ -65,13 +71,17 @@ NumPy-based reference renderer. Useful for validation and generating test scenes
 ### Quick Start
 
 ```bash
-# Generate a test scene
 cd python
+
+# Option A: generate a synthetic scene
 python create_scene.py
 
-# Render it
+# Option B: convert an existing PLY from a trained 3DGS model
+python ply_to_gsplat.py ../model.ply ../model.gsplat
+
+# Render
 python render.py ../complex.gsplat
 
-# Convert from PLY
-python ply_to_gsplat.py ../input.ply ../output.gsplat
+# Convert output to PNG for viewing
+python ppm_to_png.py ../complex.ppm
 ```

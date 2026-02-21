@@ -46,7 +46,7 @@ See [Steps.md](Steps.md) for a detailed walkthrough of the rendering pipeline wi
 ## C Implementation (`c/`)
 
 Designed for bare-metal — no libc dependencies in the math/preprocessing code.
-Static buffers, no malloc in the hot path.
+Static buffers, no malloc in the hot path. NOTE: I have not yet implemented sorting or rasterizing, just the pre-processing steps. For the final version, we probably want at least 2 kernels (1 for sorting, 1 for rasterizing). We could make more if we have time so the whole thing runs on the GPU. I think priority at the start should be getting rasterizing to work on the GPU.
 
 | File | Purpose |
 |------|---------|
